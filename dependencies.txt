@@ -1,0 +1,12 @@
+pip install pillow
+pip install numpy
+pip install pygame
+pip install neat-python
+pip install vizdoom
+pip install nose
+
+In the PyGame Learning Environment folder
+sudo pip install -e .
+
+in PLE/games/base/doomwrapper.py
+set the vizdoom_dir to the vizdoom directory (%appdata% -> Local -> Programs -> Python -> Python39 -> Lib -> site-packages -> vizdoom)

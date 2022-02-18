@@ -4,6 +4,7 @@ pip install vizdoom
 pip install nose
 pip install numpy
 pip install neat-python
+pip install matplotlib
 
 In the Environment folder
 sudo pip install -e .

@@ -72,14 +72,14 @@ class BirdPlayer(pygame.sprite.Sprite):
 
             # set the image to draw with.
             self.image = self.image_assets[self.color][self.current_image]
-            self.rect = self.image.get_rect()
+            self.rect = self.image.get_rect()							# PLAYER 
 
         if self.vel < self.MAX_DROP_SPEED and self.thrust_time == 0.0:
             self.vel += self.GRAVITY
 
         # the whole point is to spread this out over the same time it takes in
         # 30fps.
-        if self.thrust_time + dt <= (1.0 / 30.0) and self.flapped:
+        if self.thrust_time + dt <= (1.0 / 30.0) and self.flapped:				# was -1.0
             self.thrust_time += dt
             self.vel += -1.0 * self.FLAP_POWER
         else:
@@ -111,12 +111,15 @@ class Pipe(pygame.sprite.Sprite):
 
         self.image = pygame.Surface((self.width, self.SCREEN_HEIGHT))
         self.image.set_colorkey((0, 0, 0))
-
+	
+        # gap_start = abs(gap_start + 15)
+        # offset = offset + 15									# EDITED INPUT		LAST EDITS
+        gap_start = 200
         self.init(gap_start, gap_size, offset, color)
 
     def init(self, gap_start, gap_size, offset, color):
         self.image.fill((0, 0, 0))
-        self.gap_start = gap_start
+        self.gap_start = gap_start								# PIPE added abs - 30
         self.x = self.SCREEN_WIDTH + self.width + offset
 
         self.lower_pipe = self.image_assets[color]["lower"]
@@ -166,21 +169,15 @@ class Backdrop():
 class FlappyBird(base.PyGameWrapper):
     """
     Used physics values from sourabhv's `clone`_.
-
     .. _clone: https://github.com/sourabhv/FlapPyBird
-
-
     Parameters
     ----------
     width : int (default: 288)
         Screen width. Consistent gameplay is not promised for different widths or heights, therefore the width and height should not be altered.
-
     height : inti (default: 512)
         Screen height.
-
     pipe_gap : int (default: 100)
         The gap in pixels left between the top and bottom pipes.
-
     """
 
     def __init__(self, width=288, height=512, pipe_gap=100):
@@ -299,10 +296,8 @@ class FlappyBird(base.PyGameWrapper):
     def getGameState(self):
         """
         Gets a non-visual state representation of the game.
-
         Returns
         -------
-
         dict
             * player y position.
             * players velocity.
@@ -312,14 +307,11 @@ class FlappyBird(base.PyGameWrapper):
             * next next pipe distance to player
             * next next pipe top y position
             * next next pipe bottom y position
-
-
             See code for structure.
-
         """
         pipes = []
         for p in self.pipe_group:
-            if p.x + p.width/2 > self.player.pos_x  :
+            if p.x + p.width/3 > self.player.pos_x  :						# was /2
                 pipes.append((p, p.x + p.width/2 - self.player.pos_x ))
 
         pipes.sort(key=lambda p: p[1])
@@ -334,7 +326,7 @@ class FlappyBird(base.PyGameWrapper):
             "player_y": self.player.pos_y,
             "player_vel": self.player.vel,
 
-            "next_pipe_dist_to_player": next_pipe.x + next_pipe.width/2 - self.player.pos_x ,
+            "next_pipe_dist_to_player": next_pipe.x - self.player.pos_x ,			# was + next_pipe.width/2
             "next_pipe_top_y": next_pipe.gap_start,
             "next_pipe_bottom_y": next_pipe.gap_start + self.pipe_gap,
 
@@ -350,8 +342,8 @@ class FlappyBird(base.PyGameWrapper):
 
     def _generatePipes(self, offset=0, pipe=None):
         start_gap = self.rng.random_integers(
-            self.pipe_min,
-            self.pipe_max
+            self.pipe_min + 25,									# + 15 was added
+            self.pipe_max									# - 15 was added				
         )
 
         if pipe is None:

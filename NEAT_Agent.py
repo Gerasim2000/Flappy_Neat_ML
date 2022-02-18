@@ -1,14 +1,12 @@
+from lib2to3.pgen2.pgen import generate_grammar
 from ple import PLE
 from ple.games.flappybird import FlappyBird
 import numpy as np
 import neat
 import os
-      
-# Setup game environment
-# environment = PLE(FlappyBird(288,512,100), fps=30, display_screen=True, reward_values = {"positive": 1.0, "negative": -1.0, "tick": 0.1, "loss": -5.0, "win": 5.0})
+import warnings
+import matplotlib.pyplot as plt
 
-# this slows the visual down
-# environment.force_fps = False
 
 # Feed the game state into the Input Layer
 # Return the activated output
@@ -19,16 +17,16 @@ def networkOutput(network, game):
     bird_y = game_state["player_y"]
     
     # horizontal distance to next pair of pipes
-    # pipe_dist = game_state["next_pipe_dist_to_player"] 
+    pipe_dist = abs(game_state["next_pipe_dist_to_player"])
     
     # player velocity
     bird_speed = game_state["player_vel"]
     
     # vertical distance to both pipes ( currently testing only 1 pipe)
-    top_pipe = abs(bird_y - game_state["next_pipe_top_y"])
+    top_pipe = abs(bird_y - game_state["next_pipe_top_y"]) 
     bottom_pipe = abs(bird_y - game_state["next_pipe_bottom_y"])
     
-    output = network.activate((bird_y, bird_speed, top_pipe, bottom_pipe))
+    output = network.activate((bird_y, pipe_dist, bird_speed, top_pipe, bottom_pipe))
     # output = network.activate((bird_y, top_pipe, bottom_pipe)) # give all inputs
     return output
 
@@ -36,50 +34,62 @@ def networkOutput(network, game):
 
 #Fitness function
 def eval(genomes, configuration):
-    print("Fitness function start")
+    global generation
+    generation += 1
     
-    environment = PLE(FlappyBird(288,512,100), fps=30, display_screen=True,
-                      reward_values = {"positive": 1.0, "negative": -1.0, "tick": 0.1, "loss": -5.0, "win": 5.0}, 
-                      force_fps=False)
-    # environment.init()
-    # environment.game._setup()
-    #environment.init()
+    print("===================== Generation "  + str(generation) + " =====================")
     
-    print("New Generation")
+    if(generation >= 40): 
+        environment.force_fps = False
+        environment.display_screen = True
+    
+    scores = []                                                     # all scores for current generation
+
     environment.init()
     for genome_id, genome in genomes:
-        
-        # environment.init()
-        
+
         net = neat.nn.FeedForwardNetwork.create(genome, configuration)    
-        # genome.fitness = 0
-        print("Bird number: " + str(genome_id))
+        pipe_count = 0                                              # this is the score
         
-        # Game loop
-        while True:
+        # Game loop for a single genome
+        while True:  
+            last_score = environment.game.getScore()                # score before action
             
-            # get output from network
-            output = networkOutput(net, environment)
+            output = networkOutput(net, environment)                 # Get output from network
             if output[0] > 0.5:
-                print("about to jump: " + str(output[0]) + " frame: " + str(environment.getFrameNumber()))
-                environment.act(environment.getActionSet()[0])
-                # environment.game.player.flap()
+                environment.act(environment.getActionSet()[0])      # Jump   
             else:
-                environment.act(environment.getActionSet()[1])
-            # print("output: " + str(output) + "score: " + str(environment.game.score))
+                environment.act(environment.getActionSet()[1])      # Don't jump (NOOP action)
             
-            genome.fitness = environment._getReward()
+            # if a pipe has passed (score should be > "positive" value in PLE initialization)
+            score = environment.game.getScore() - last_score
+            if(score >= 1): 
+                # print("and anotha one: " + str(score))
+                pipe_count += 1
             
-            # if dead
+            # when genome dies
             if(environment.lives() <= 0):
-
+                genome.fitness = environment.game.score
                 environment.init()
-                print("Dead: " + str(genome_id) + " score: " + str(genome.fitness))
+                print("Dead: " + str(genome_id) + " score: " + str(pipe_count))
                 break
-        
-        
-   
 
+def plot_stats(stats):
+    generation = range(len(stats.most_fit_genomes))
+    highest_fitness = [c.fitness for c in stats.most_fit_genomes]
+    avg_fitness = np.array(stats.get_fitness_mean())
+    stdev_fitness = np.array(stats.get_fitness_stdev())
+
+    plt.plot(generation, avg_fitness, 'b-', label="average")
+    plt.plot(generation, avg_fitness + stdev_fitness, 'g-.', label="+1 sd")
+    plt.plot(generation, highest_fitness, 'r-', label="best")
+
+    plt.title("Average-highest fitness")
+    plt.xlabel("Generation")
+    plt.ylabel("Fitness")
+    plt.grid()
+    plt.legend(loc="best")
+    plt.show()
 
 def run(): 
     # Load NEAT configuration
@@ -88,9 +98,26 @@ def run():
     
     # Initiate population and show statistics for each generation
     population = neat.Population(configuration)
-    population.add_reporter(neat.StatisticsReporter())
+    stats = neat.StatisticsReporter()
+    population.add_reporter(neat.StdOutReporter(True))
+    population.add_reporter(stats)
+    population.add_reporter(neat.Checkpointer(5))
+    
+    # to load a previous generation
+    # population = neat.Checkpointer.restore_checkpoint('neat-checkpoint-49')
     best = population.run(eval, 20)
     
+    plot_stats(stats)
     return best
-     
-run()
+    
+    
+
+# suppress warnings on environment startup
+warnings.filterwarnings("ignore")  
+generation = 0
+# Force fps = false for human speed
+environment = PLE(FlappyBird(288,512,110), fps=30, display_screen=False, add_noop_action=True,
+                      reward_values = {"positive": 2.0, "negative": -1.0, "tick": 0.01, "loss": -2.0, "win": 2.0}, 
+                      force_fps=True)
+best = run()
+

@@ -8,6 +8,9 @@ import warnings
 import matplotlib.pyplot as plt
 
 
+# WARNING CHANGED INPUT SIZE TO 3
+
+
 # Feed the game state into the Input Layer
 # Return the activated output
 def networkOutput(network, game):
@@ -26,8 +29,9 @@ def networkOutput(network, game):
     top_pipe = abs(bird_y - game_state["next_pipe_top_y"]) 
     bottom_pipe = abs(bird_y - game_state["next_pipe_bottom_y"])
     
-    output = network.activate((bird_y, pipe_dist, bird_speed, top_pipe, bottom_pipe))
-    # output = network.activate((bird_y, top_pipe, bottom_pipe)) # give all inputs
+    
+    # output = network.activate((bird_y, pipe_dist, bird_speed, top_pipe, bottom_pipe))
+    output = network.activate((bird_y, top_pipe, bottom_pipe)) # give all inputs
     return output
 
 
@@ -39,9 +43,10 @@ def eval(genomes, configuration):
     
     print("===================== Generation "  + str(generation) + " =====================")
     
-    if(generation >= 40): 
+    if(generation >= 10): 
         environment.force_fps = False
         environment.display_screen = True
+        print(str(environment.getActionSet()))
     
     scores = []                                                     # all scores for current generation
 

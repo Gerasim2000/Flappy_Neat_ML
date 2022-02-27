@@ -183,7 +183,7 @@ class FlappyBird(base.PyGameWrapper):
     def __init__(self, width=288, height=512, pipe_gap=100):
 
         actions = {
-            "up": K_SPACE
+            "up": pygame.K_SPACE
         }
 
         fps = 30

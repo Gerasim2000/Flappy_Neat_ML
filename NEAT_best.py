@@ -1,6 +1,5 @@
-from lib2to3.pgen2.pgen import generate_grammar
-from ple import PLE
-from ple.games.flappybird import FlappyBird
+from Environment.ple import PLE
+from Environment.ple.games.flappybird import FlappyBird
 import numpy as np
 import neat
 import os
@@ -10,25 +9,35 @@ import matplotlib.pyplot as plt
 
 # WARNING CHANGED INPUT SIZE TO 3
 
-
+minMaxValues = {"player_vel" : 10, # -10 to 10 (make it 0 to 20)
+                "pipe_dist" : 310, # 0 to 140 (beginning is 310)
+                "bottom_pipe": 140} # 140 to 300
 # Feed the game state into the Input Layer
 # Return the activated output
 def networkOutput(network, game):
     game_state = game.getGameState()
     
+    # bird moves only on y axis (this is all we need for bird location)
+    bird_y = game_state["player_y"]
     
-    bird_y = game_state["player_y"] # bird moves only on y axis (this is all we need for bird location)
-    pipe_dist = abs(game_state["next_pipe_dist_to_player"]) # horizontal distance to next pair of pipes
-    bird_speed = game_state["player_vel"]   # player velocity
+    # horizontal distance to next pair of pipes
+    pipe_dist = abs(game_state["next_pipe_dist_to_player"])
+    
+    # player velocity
+    bird_speed = game_state["player_vel"]
+    
+    # vertical distance to both pipes ( currently testing only 1 pipe)
     top_pipe = abs(bird_y - game_state["next_pipe_top_y"]) 
     bottom_pipe = abs(bird_y - game_state["next_pipe_bottom_y"])
     
-    #================================= CURRENTLY TESTING WITH VERTICAL DISTANCE BETWEEN NEXT 2 PIPES ================================================
-    pipe_diff = abs(game_state["next_pipe_bottom_y"] - game_state["next_next_pipe_bottom_y"])
+    diff = bird_y - game_state["next_pipe_bottom_y"]
+    
+    print("Speed: ", bird_speed, " X distance: ", pipe_dist, " Y bot pipe: ", game_state["next_pipe_bottom_y"], "height diff: ", diff)
     
     # output = network.activate((bird_y, pipe_dist, bird_speed, top_pipe, bottom_pipe))
-    output = network.activate((bottom_pipe, top_pipe, bird_speed, pipe_dist, pipe_diff)) # give all inputs
+    output = network.activate((bird_y, top_pipe, bottom_pipe)) # give all inputs
     return output
+
 
 
 #Fitness function
@@ -38,7 +47,7 @@ def eval(genomes, configuration):
     
     print("===================== Generation "  + str(generation) + " =====================")
     
-    if(generation >= 40): 
+    if(generation >= 20): 
         environment.force_fps = False
         environment.display_screen = True
         print(str(environment.getActionSet()))
@@ -120,4 +129,3 @@ environment = PLE(FlappyBird(288,512,110), fps=30, display_screen=False, add_noo
                       reward_values = {"positive": 2.0, "negative": -1.0, "tick": 0.01, "loss": -2.0, "win": 2.0}, 
                       force_fps=True)
 best = run()
-

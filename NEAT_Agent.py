@@ -1,12 +1,11 @@
-from lib2to3.pgen2.pgen import generate_grammar
-from ple import PLE
-from ple.games.flappybird import FlappyBird
+from Environment.ple import PLE
+from Environment.ple.games.flappybird import FlappyBird
 import numpy as np
 import neat
 import os
 import warnings
 import matplotlib.pyplot as plt
-
+import pickle
 
 # WARNING CHANGED INPUT SIZE TO 3
 
@@ -26,12 +25,13 @@ def networkOutput(network, game):
     bird_speed = game_state["player_vel"]
     
     # vertical distance to both pipes ( currently testing only 1 pipe)
-    top_pipe = abs(bird_y - game_state["next_pipe_top_y"]) 
+    top_pipe = abs(bird_y - game_state["next_pipe_top_y"])
     bottom_pipe = abs(bird_y - game_state["next_pipe_bottom_y"])
-    
+    next_pipe_bottom = game_state["next_next_pipe_bottom_y"]
+    next_pipe_top = game_state["next_next_pipe_top_y"]
     
     # output = network.activate((bird_y, pipe_dist, bird_speed, top_pipe, bottom_pipe))
-    output = network.activate((bird_y, top_pipe, bottom_pipe)) # give all inputs
+    output = network.activate((top_pipe, bottom_pipe, next_pipe_top, next_pipe_bottom, pipe_dist, bird_speed)) # give all inputs
     return output
 
 
@@ -43,10 +43,10 @@ def eval(genomes, configuration):
     
     print("===================== Generation "  + str(generation) + " =====================")
     
-    if(generation >= 10): 
-        environment.force_fps = False
-        environment.display_screen = True
-        print(str(environment.getActionSet()))
+    # if(generation >= 80): 
+    #     environment.force_fps = False
+    #     environment.display_screen = True
+    #     print(str(environment.getActionSet()))
     
     scores = []                                                     # all scores for current generation
 
@@ -62,9 +62,11 @@ def eval(genomes, configuration):
             
             output = networkOutput(net, environment)                 # Get output from network
             if output[0] > 0.5:
-                environment.act(environment.getActionSet()[0])      # Jump   
+                environment.act(environment.getActionSet()[0])      # Jump
+                # print("Jump")
             else:
                 environment.act(environment.getActionSet()[1])      # Don't jump (NOOP action)
+                # print("NOOP")
             
             # if a pipe has passed (score should be > "positive" value in PLE initialization)
             score = environment.game.getScore() - last_score
@@ -110,7 +112,7 @@ def run():
     
     # to load a previous generation
     # population = neat.Checkpointer.restore_checkpoint('neat-checkpoint-49')
-    best = population.run(eval, 20)
+    best = population.run(eval, 100)
     
     plot_stats(stats)
     return best
@@ -126,3 +128,5 @@ environment = PLE(FlappyBird(288,512,110), fps=30, display_screen=False, add_noo
                       force_fps=True)
 best = run()
 
+with open('NEAT_trained', 'wb') as files:
+    pickle.dump(best, files)

@@ -30,7 +30,7 @@ class BirdPlayer(pygame.sprite.Sprite):
 
         # all in terms of y
         self.vel = 0
-        self.FLAP_POWER = 9 * self.scale
+        self.FLAP_POWER = 9.0 * self.scale
         self.MAX_DROP_SPEED = 10.0
         self.GRAVITY = 1.0 * self.scale
 
@@ -114,7 +114,7 @@ class Pipe(pygame.sprite.Sprite):
 	
         # gap_start = abs(gap_start + 15)
         # offset = offset + 15									# EDITED INPUT		LAST EDITS
-        gap_start = 200
+        gap_start = 300
         self.init(gap_start, gap_size, offset, color)
 
     def init(self, gap_start, gap_size, offset, color):
@@ -205,14 +205,14 @@ class FlappyBird(base.PyGameWrapper):
         self._asset_dir = os.path.join(self._dir_, "assets/")
         self._load_images()
 
-        self.pipe_offsets = [0, self.width * 0.5, self.width]
+        self.pipe_offsets = [0, self.width * 0.5, self.width]              
         self.init_pos = (
             int(self.width * 0.2),
             int(self.height / 2)
         )
 
-        self.pipe_min = int(self.pipe_gap / 4)
-        self.pipe_max = int(self.height * 0.79 * 0.6 - self.pipe_gap / 2)
+        self.pipe_min = int(self.pipe_gap * 0.7)                                     # /4 
+        self.pipe_max = int(self.height * 0.79 * 0.6 - self.pipe_gap / 2) # + 25 added
 
         self.backdrop = None
         self.player = None
@@ -273,7 +273,7 @@ class FlappyBird(base.PyGameWrapper):
 
         if self.pipe_group is None:
             self.pipe_group = pygame.sprite.Group([
-                self._generatePipes(offset=-75),
+                self._generatePipes(offset=-75),                                      # COMMENTED
                 self._generatePipes(offset=-75 + self.width / 2),
                 self._generatePipes(offset=-75 + self.width * 1.5)
             ])
@@ -311,11 +311,10 @@ class FlappyBird(base.PyGameWrapper):
         """
         pipes = []
         for p in self.pipe_group:
-            if p.x + p.width/3 > self.player.pos_x  :						# was /2
+            if p.x + p.width > self.player.pos_x  :						# was + p.width/2
                 pipes.append((p, p.x + p.width/2 - self.player.pos_x ))
 
         pipes.sort(key=lambda p: p[1])
-
         next_pipe = pipes[1][0]
         next_next_pipe = pipes[0][0]
 
@@ -326,7 +325,7 @@ class FlappyBird(base.PyGameWrapper):
             "player_y": self.player.pos_y,
             "player_vel": self.player.vel,
 
-            "next_pipe_dist_to_player": next_pipe.x - self.player.pos_x ,			# was + next_pipe.width/2
+            "next_pipe_dist_to_player": next_pipe.x - self.player.pos_x,			# was + next_pipe.width/2
             "next_pipe_top_y": next_pipe.gap_start,
             "next_pipe_bottom_y": next_pipe.gap_start + self.pipe_gap,
 
@@ -342,8 +341,8 @@ class FlappyBird(base.PyGameWrapper):
 
     def _generatePipes(self, offset=0, pipe=None):
         start_gap = self.rng.random_integers(
-            self.pipe_min + 25,									# + 15 was added
-            self.pipe_max									# - 15 was added				
+            self.pipe_min,									# + 15 was added
+            self.pipe_max   								# - 15 was added				
         )
 
         if pipe is None:
@@ -372,6 +371,7 @@ class FlappyBird(base.PyGameWrapper):
                 key = event.key
                 if key == self.actions['up']:
                     self.player.flap()
+                    break
 
     def game_over(self):
         return self.lives <= 0

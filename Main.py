@@ -3,6 +3,7 @@ from Environment.ple.games.flappybird import FlappyBird
 import numpy as np
 import pickle
 import os
+import matplotlib.pyplot as plt
 import neat
 
 class Agent():
@@ -101,8 +102,22 @@ def shapeGameState(environment):
     game_state_reshaped = [pipe1_bottom, pipe1_top, pipe2_top, pipe_dist, bird_speed]
     
     return game_state_reshaped
+ 
+ 
+def splitList(list, partitionSize):
+    avg = len(list) / float(partitionSize)
+    res = []
+    last = 0.0
+
+    while last < len(list):
+        res.append(list[int(last):int(last + avg)])
+        last += avg
+
+    return res
+
     
 def runQ(iterations, environment):
+    scores = []
     for i in range(iterations):
         
         Q_Agent = Agent()
@@ -122,11 +137,11 @@ def runQ(iterations, environment):
 
             # when genome dies
             if(environment.lives() <= 0):
-                print("Generation: ", i, " Score: ", str(score_pipes))
+                # print("Generation: ", i, " Score: ", str(score_pipes))
+                scores.append(score_pipes)
                 environment.init()
-                # print("Try: " + str(i) + " score: " + str(math.floor(environment.game.score()/2)))
                 break    
-
+    return scores
 def networkOutput(network, environment):
     game_state = environment.getGameState()
     
@@ -155,6 +170,8 @@ def runNeat(iterations, environment):
     config_path = os.getcwd() + os.sep + "configuration.txt" # my config = configuration.txt
     configuration = neat.Config(neat.DefaultGenome, neat.DefaultReproduction, neat.DefaultSpeciesSet, neat.DefaultStagnation, config_path)    
     Neat_agent = neat.nn.FeedForwardNetwork.create(genome, configuration)
+    
+    scores = []
     for i in range(iterations):
         pipe_count = 0
         while True:  
@@ -178,20 +195,44 @@ def runNeat(iterations, environment):
                 if(environment.lives() <= 0):
                     genome.fitness = environment.game.score
                     environment.init()
-                    print("Dead: " + str(i) + " score: " + str(pipe_count))
+                    scores.append(pipe_count)
+                    # print("Dead: " + str(i) + " score: " + str(pipe_count))
                     break
-    
-iterations = 50
+    return scores
 
 environment = PLE(FlappyBird(288,512,110), fps=30, display_screen=True, add_noop_action=True,
                       reward_values = {"positive": 10.0, "negative": -100.0, "tick": 0.01, "loss": -2.0, "win": 2.0}, 
                       force_fps=True)
 
 environment.init()
- 
-runQ(iterations, environment)
-# runNeat(iterations, environment)
+iterations = 50
+qScore = runQ(iterations, environment)
+# print(str(qScore))
+qMean = np.mean(qScore)
+qStdev = np.std(qScore)
+qMax = np.max(qScore)
 
+print("Avg: ", qMean, " Stdev: ", qStdev, " Max: ", qMax)
+neatScore = runNeat(iterations, environment)
+neatMean = np.mean(neatScore)
+neatStdev = np.std(neatScore)
+neatMax = np.max(neatScore)
+# print(str(neatScore))
+print("Avg: ", neatMean, " Stdev: ", neatStdev, " Max: ", neatMax)
+
+x = np.arange(3)
+y1 = [qMean, qMean + qStdev, qMax]
+y2 = [neatMean, neatMean + neatStdev, neatMax]
+width = 0.2
+  
+# plot the data
+plt.bar(x-0.2, y1, width, color='royalblue')
+plt.bar(x, y2, width, color='darkorange')
+plt.xticks(x, ['Average', '+1 st. dev.', 'Max score'])
+plt.xlabel("Metrics")
+plt.ylabel("Scores")
+plt.legend(["Q-Learning", "NEAT"])
+plt.show()
 
 
 

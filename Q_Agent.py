@@ -57,6 +57,39 @@ minMaxValues = {"player_vel" : 10, # -10 to 10 (make it 0 to 20)
 # X distance - {0 - 9}
 # Y difference - {0 - 19} from -90 to +90
 
+def splitList(list, parts):
+    avg = len(list) / float(parts)
+    result = []
+    last = 0.0
+
+    while last < len(list):
+        result.append(list[int(last):int(last + avg)])
+        last += avg
+
+    return result
+
+def plotStats(list):
+    average = []
+    stdev = []
+    max = []
+    for generation in list:
+        average.append(np.mean(generation))
+        stdev.append(np.std(generation))
+        max.append(np.max(generation))
+
+    plt.plot(generation, average, 'b-', label="average")
+    plt.plot(generation, average + stdev, 'g-.', label="+1 st. dev.")
+    plt.plot(generation, max, 'r-', label="best")
+
+    plt.title("Average-highest fitness")
+    plt.xlabel("Generation")
+    plt.ylabel("Fitness")
+    plt.grid()
+    plt.legend(loc="best")
+    plt.show()
+        
+    return
+
 def shapeGameState(environment):
     
     game_state = environment.getGameState()
@@ -163,11 +196,11 @@ def run():
             
             # when genome dies
             if(environment.lives() <= 0):
-                print("Generation: ", i, " Score: ", str(score_pipes))
+                # print("Generation: ", i, " Score: ", str(score_pipes))
                 environment.init()
-                # print("Try: " + str(i) + " score: " + str(math.floor(environment.game.score()/2)))
+                scores.append(score_pipes)
                 break
-
+    return scores
     
 
 # suppress warnings on environment startup
@@ -177,4 +210,5 @@ warnings.filterwarnings("ignore")
 environment = PLE(FlappyBird(288,512,110), fps=30, display_screen=False, add_noop_action=True,
                       reward_values = {"positive": 10.0, "negative": -100.0, "tick": 0.01, "loss": -2.0, "win": 2.0}, 
                       force_fps=True)
-run()
+results = run()
+plotStats(splitList(results))

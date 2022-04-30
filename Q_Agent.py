@@ -3,6 +3,10 @@ from Environment.ple.games.flappybird import FlappyBird
 import numpy as np
 import warnings
 import matplotlib.pyplot as plt
+import pickle
+import time
+
+
 
 class Agent():
     
@@ -14,12 +18,12 @@ class Agent():
         # State space
         bottom_pipe = 20                                                                            # Q_Table Dimensions
         top_pipe = 20
-        next_pipe_top = 8
         pipe_dist = 20
+        next_pipe_bot = 8
         bird_speed = 4
         
         # The Q table consists of 4 dimensions(representing the game state) and the 2 actions
-        self.Q_table = np.zeros((bottom_pipe, top_pipe, next_pipe_top, pipe_dist, bird_speed, 2), dtype = float)
+        self.Q_table = np.zeros((bottom_pipe, top_pipe, next_pipe_bot, pipe_dist, bird_speed, 2), dtype = float)
     def getQ(self):
         
         return self.Q_table
@@ -57,38 +61,6 @@ minMaxValues = {"player_vel" : 10, # -10 to 10 (make it 0 to 20)
 # X distance - {0 - 9}
 # Y difference - {0 - 19} from -90 to +90
 
-def splitList(list, parts):
-    avg = len(list) / float(parts)
-    result = []
-    last = 0.0
-
-    while last < len(list):
-        result.append(list[int(last):int(last + avg)])
-        last += avg
-
-    return result
-
-def plotStats(list):
-    average = []
-    stdev = []
-    max = []
-    for generation in list:
-        average.append(np.mean(generation))
-        stdev.append(np.std(generation))
-        max.append(np.max(generation))
-
-    plt.plot(generation, average, 'b-', label="average")
-    plt.plot(generation, average + stdev, 'g-.', label="+1 st. dev.")
-    plt.plot(generation, max, 'r-', label="best")
-
-    plt.title("Average-highest fitness")
-    plt.xlabel("Generation")
-    plt.ylabel("Fitness")
-    plt.grid()
-    plt.legend(loc="best")
-    plt.show()
-        
-    return
 
 def shapeGameState(environment):
     
@@ -164,16 +136,16 @@ epsilon = 0.0
 #Fitness function
 def run():
 
-    scores = []                                                     # all scores for current generation
+    scores = []                                               # all scores for current generation
     agent = Agent()
     environment.init()
     for i in range(iterations):
 
         # After 500 iterations show gameplay
-        if(i > 19000):
+        if(i > 50000):
             environment.display_screen = True
             environment.force_fps = False
-            np.save('q_trained', agent.getQ())
+            # np.save('q_trained', agent.getQ())
         score_pipes = 0
         # Game loop for a single genome
         while True:  
@@ -196,12 +168,11 @@ def run():
             
             # when genome dies
             if(environment.lives() <= 0):
-                # print("Generation: ", i, " Score: ", str(score_pipes))
+                print("Generation: ", i, " Score: ", str(score_pipes))
                 environment.init()
                 scores.append(score_pipes)
                 break
     return scores
-    
 
 # suppress warnings on environment startup
 warnings.filterwarnings("ignore")  
@@ -210,5 +181,15 @@ warnings.filterwarnings("ignore")
 environment = PLE(FlappyBird(288,512,110), fps=30, display_screen=False, add_noop_action=True,
                       reward_values = {"positive": 10.0, "negative": -100.0, "tick": 0.01, "loss": -2.0, "win": 2.0}, 
                       force_fps=True)
+
+start = time.time()
+
 results = run()
-plotStats(splitList(results))
+
+end = time.time()
+
+print("Time: ", end - start)
+
+# save the training data to a file for later visualisation
+# with open('Q_Training_Data_50000', 'wb') as files:
+    # pickle.dump(results, files)

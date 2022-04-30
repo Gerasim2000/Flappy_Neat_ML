@@ -30,9 +30,9 @@ class BirdPlayer(pygame.sprite.Sprite):
 
         # all in terms of y
         self.vel = 0
-        self.FLAP_POWER = 9.0 * self.scale
-        self.MAX_DROP_SPEED = 10.0
-        self.GRAVITY = 1.0 * self.scale
+        self.FLAP_POWER = 8.0 * self.scale  # 8.0
+        self.MAX_DROP_SPEED = 10.0          # 10.0
+        self.GRAVITY = 1.0 * self.scale     # 1.0
 
         self.rng = rng
 

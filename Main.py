@@ -200,7 +200,7 @@ def runNeat(iterations, environment):
                     break
     return scores
 
-environment = PLE(FlappyBird(288,512,110), fps=30, display_screen=True, add_noop_action=True,
+environment = PLE(FlappyBird(288,512,120), fps=30, display_screen=True, add_noop_action=True,
                       reward_values = {"positive": 10.0, "negative": -100.0, "tick": 0.01, "loss": -2.0, "win": 2.0}, 
                       force_fps=True)
 
@@ -213,6 +213,10 @@ qStdev = np.std(qScore)
 qMax = np.max(qScore)
 
 print("Avg: ", qMean, " Stdev: ", qStdev, " Max: ", qMax)
+
+# Slow down the gameplay
+# environment.force_fps = False
+
 neatScore = runNeat(iterations, environment)
 neatMean = np.mean(neatScore)
 neatStdev = np.std(neatScore)

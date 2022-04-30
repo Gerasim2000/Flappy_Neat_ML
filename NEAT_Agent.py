@@ -6,6 +6,7 @@ import os
 import warnings
 import matplotlib.pyplot as plt
 import pickle
+import time
 
 # WARNING CHANGED INPUT SIZE TO 3
 
@@ -34,7 +35,7 @@ def networkOutput(network, game):
     output = network.activate((top_pipe, bottom_pipe, next_pipe_top, next_pipe_bottom, pipe_dist, bird_speed)) # give all inputs
     return output
 
-
+scores = [] 
 
 #Fitness function
 def eval(genomes, configuration):
@@ -48,7 +49,7 @@ def eval(genomes, configuration):
     #     environment.display_screen = True
     #     print(str(environment.getActionSet()))
     
-    scores = []                                                     # all scores for current generation
+                                                        # all scores for current generation
 
     environment.init()
     for genome_id, genome in genomes:
@@ -79,25 +80,9 @@ def eval(genomes, configuration):
                 genome.fitness = environment.game.score
                 environment.init()
                 print("Dead: " + str(genome_id) + " score: " + str(pipe_count))
+                scores.append(pipe_count)
                 break
-
-def plot_stats(stats):
-    generation = range(len(stats.most_fit_genomes))
-    highest_fitness = [c.fitness for c in stats.most_fit_genomes]
-    avg_fitness = np.array(stats.get_fitness_mean())
-    stdev_fitness = np.array(stats.get_fitness_stdev())
-
-    plt.plot(generation, avg_fitness, 'b-', label="average")
-    plt.plot(generation, avg_fitness + stdev_fitness, 'g-.', label="+1 sd")
-    plt.plot(generation, highest_fitness, 'r-', label="best")
-
-    plt.title("Average-highest fitness")
-    plt.xlabel("Generation")
-    plt.ylabel("Fitness")
-    plt.grid()
-    plt.legend(loc="best")
-    plt.show()
-
+            
 def run(): 
     # Load NEAT configuration
     config_path = os.getcwd() + os.sep + "configuration.txt" # my config = configuration.txt
@@ -108,15 +93,14 @@ def run():
     stats = neat.StatisticsReporter()
     population.add_reporter(neat.StdOutReporter(True))
     population.add_reporter(stats)
-    population.add_reporter(neat.Checkpointer(5))
+    # population.add_reporter(neat.Checkpointer(5))
     
     # to load a previous generation
     # population = neat.Checkpointer.restore_checkpoint('neat-checkpoint-49')
-    best = population.run(eval, 100)
+    best = population.run(eval, 200)
     
-    plot_stats(stats)
-    return best
-    
+    # plot_stats(stats)
+    return best    
     
 
 # suppress warnings on environment startup
@@ -126,7 +110,18 @@ generation = 0
 environment = PLE(FlappyBird(288,512,110), fps=30, display_screen=False, add_noop_action=True,
                       reward_values = {"positive": 2.0, "negative": -1.0, "tick": 0.01, "loss": -2.0, "win": 2.0}, 
                       force_fps=True)
+
+start = time.time()
+
 best = run()
 
-with open('NEAT_trained', 'wb') as files:
-    pickle.dump(best, files)
+end = time.time()
+
+print("Time: ", end - start)
+
+# with open('NEAT_trained', 'wb') as files:
+    # pickle.dump(best, files)
+# with open('Neat_Training_Data_1000', 'wb') as file:
+    # print(scores)
+    # pickle.dump(scores, file)    
+    
